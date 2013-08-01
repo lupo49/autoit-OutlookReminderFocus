@@ -20,12 +20,12 @@ Opt("WinTitleMatchMode", 2)
 ; Set to 1 to turn on debug messages
 $debug = 0;
 $oEvtReminders = ""
+$oMyError = ObjEvent("AutoIt.Error","MyErrFunc") ; Initialize a COM error handler
 
 ; Prevent this application from starting Outlook
 While 1
 	If ProcessExists("outlook.exe") Then
 		; Outlook has been started, exit loop and watch for ReminderFire events
-		ObjEvent("AutoIt.Error", "MyErrFunc")
 		$outlook = ObjGet("", "Outlook.Application")
 
 		If @error = 1 Then
@@ -91,8 +91,20 @@ EndFunc
 
 Func MyErrFunc($oMyError)
     ConsoleWrite("COM error" & @CR)
-    $HexNumber=hex($oMyError.number,8)
-    ConsoleWrite("COM Error: err.description is: " & @TAB & $oMyError.description & " err.number is: " & @TAB & $HexNumber & " err.scriptline is: " & @TAB & $oMyError.scriptline & @CR)
+    $HexNumber = hex($oMyError.number, 8)
+    ConsoleWrite("COM Error: err.description is: " & @TAB & $oMyError.description & " err.number is: " & @TAB & $HexNumber & _
+				  " err.scriptline is: " & @TAB & $oMyError.scriptline & @CR)
+	
+	Msgbox(0, "AutoItCOM Test","We intercepted a COM Error!"    		  & @CRLF  & @CRLF & _
+             "err.description is: " 	& @TAB & $oMyError.description    & @CRLF & _
+             "err.windescription:"   	& @TAB & $oMyError.windescription & @CRLF & _
+             "err.number is: "       	& @TAB & hex($oMyError.number,8)  & @CRLF & _
+             "err.lastdllerror is: "   	& @TAB & $oMyError.lastdllerror   & @CRLF & _
+             "err.scriptline is: "  	& @TAB & $oMyError.scriptline     & @CRLF & _
+             "err.source is: "     		& @TAB & $oMyError.source         & @CRLF & _
+             "err.helpfile is: "       	& @TAB & $oMyError.helpfile       & @CRLF & _
+             "err.helpcontext is: " 	& @TAB & $oMyError.helpcontext _
+            )
     SetError(1)
 EndFunc
 
