@@ -12,19 +12,30 @@
 ; http://www.dimastr.com/outspy/home.htm
 
 #AutoIt3Wrapper_Icon=OutlookReminderFocus.ico
-#AutoIt3Wrapper_OutFile=OutlookReminderFocus.exe
+#AutoIt3Wrapper_Outfile=OutlookReminderFocus.exe
 #AutoIt3Wrapper_Res_Description=Moves Outlooks reminder windows on top, when a reminder is triggered.
 
 ; http://www.autoitscript.com/autoit3/docs/functions/AutoItSetOption.htm#WinTitleMatchMode
 Opt("WinTitleMatchMode", 2)
 ; Set to 1 to turn on debug messages
-$debug = 0;
+$debug = 1;
 $oEvtReminders = ""
-$oMyError = ObjEvent("AutoIt.Error","MyErrFunc") ; Initialize a COM error handler
+$oMyError = ObjEvent("AutoIt.Error", "MyErrFunc")
+$outlook = ""
+
+; Check for running instances, exit one is found
+If ProcessExists("OutlookReminderFocus.exe") Then ; should always be the case
+	If $debug Then ConsoleWrite("Checking for a second instance, previously running" & @CR)
+	Local $plist = ProcessList("OutlookReminderFocus.exe")
+	If ($plist[0][0] > 1) Then
+		If $debug Then ConsoleWrite("Another instance already running" & @CR)
+		Exit
+	EndIf
+Endif
 
 ; Prevent this application from starting Outlook
 While 1
-	If ProcessExists("outlook.exe") Then
+	If ProcessExists("outlook.exe") And ObjName($outlook) <> "Application"  Then
 		; Outlook has been started, exit loop and watch for ReminderFire events
 		$outlook = ObjGet("", "Outlook.Application")
 
@@ -64,10 +75,11 @@ While 1
 		EndIf
 	EndIf
 
-	Sleep(5000)
+	Sleep(500)
 WEnd
 
 Func OutlookEventReminders_ReminderFire($obj)
+	If $debug Then ConsoleWrite("ReminderFire triggered." & @CR)
 	; Function will be executed, when Outlook triggers the reminder window
 	Switch $langID
 		Case 1031
@@ -83,28 +95,32 @@ Func OutlookEventReminders_ReminderFire($obj)
 		If $debug Then ConsoleWrite("Could not find the correct window" & @CR)
 	Else
 		; Bring reminder windows to foreground
-		If $debug Then ConsoleWrite("Found reminder window. Set window on top." & @CR)
-		WinSetState($rmHandle, "", @SW_RESTORE)
-		WinSetOnTop($rmHandle, "", 1)
+		$state = WinGetState($rmHandle)
+		If $debug Then ConsoleWrite("WinGetState: " & $state & @CR)
+		If WinGetState($rmHandle) <> 7 Then ; check if window is already on top
+			If $debug Then ConsoleWrite("Found reminder window. Set window on top." & @CR)
+			WinSetState($rmHandle, "", @SW_RESTORE)
+			WinSetOnTop($rmHandle, "", 1)
+		Else
+			If $debug Then ConsoleWrite("Skipping WinSetOnTop - Reminder window is on top" & @CR)
+		EndIf
 	EndIf
 EndFunc
 
 Func MyErrFunc($oMyError)
     ConsoleWrite("COM error" & @CR)
-    $HexNumber = hex($oMyError.number, 8)
-    ConsoleWrite("COM Error: err.description is: " & @TAB & $oMyError.description & " err.number is: " & @TAB & $HexNumber & _
-				  " err.scriptline is: " & @TAB & $oMyError.scriptline & @CR)
-	
-	Msgbox(0, "AutoItCOM Test","We intercepted a COM Error!"    		  & @CRLF  & @CRLF & _
-             "err.description is: " 	& @TAB & $oMyError.description    & @CRLF & _
-             "err.windescription:"   	& @TAB & $oMyError.windescription & @CRLF & _
-             "err.number is: "       	& @TAB & hex($oMyError.number,8)  & @CRLF & _
-             "err.lastdllerror is: "   	& @TAB & $oMyError.lastdllerror   & @CRLF & _
-             "err.scriptline is: "  	& @TAB & $oMyError.scriptline     & @CRLF & _
-             "err.source is: "     		& @TAB & $oMyError.source         & @CRLF & _
-             "err.helpfile is: "       	& @TAB & $oMyError.helpfile       & @CRLF & _
-             "err.helpcontext is: " 	& @TAB & $oMyError.helpcontext _
-            )
+    $HexNumber = hex($oMyError.number,8)
+    ConsoleWrite("COM Error: err.description is: " & @TAB & $oMyError.description & " err.number is: " & @TAB & $HexNumber & " err.scriptline is: " & @TAB & $oMyError.scriptline & @CR)
+	Msgbox(0,  "AutoItCOM", "We intercepted a COM Error !"    				& @CRLF & @CRLF & _
+				"err.description is: " 	& @TAB 	& $oMyError.description  		& @CRLF & _
+				"err.windescription:"   & @TAB 	& $oMyError.windescription 	& @CRLF & _
+				"err.number is: "       & @TAB 	& hex($oMyError.number,8)  	& @CRLF & _
+				"err.lastdllerror is: " & @TAB 	& $oMyError.lastdllerror   & @CRLF & _
+				"err.scriptline is: "   & @TAB 	& $oMyError.scriptline   	& @CRLF & _
+				"err.source is: "       & @TAB 	& $oMyError.source       	& @CRLF & _
+				"err.helpfile is: "     & @TAB 	& $oMyError.helpfile    	& @CRLF & _
+				"err.helpcontext is: "  & @TAB 	& $oMyError.helpcontext _
+			)
     SetError(1)
 EndFunc
 
