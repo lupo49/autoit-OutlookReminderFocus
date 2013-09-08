@@ -1,3 +1,8 @@
+#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Icon=OutlookReminderFocus.ico
+#AutoIt3Wrapper_Outfile=OutlookReminderFocus.exe
+#AutoIt3Wrapper_Res_Description=M. Schulte - Moves Outlooks reminder windows on top, when a reminder is triggered.
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 ; Name: OutlookReminderFocus.au3
 ;
 ; Author: M. Schulte - 2013-06-18 - Created
@@ -10,10 +15,6 @@
 ; http://www.autoitscript.com/forum/topic/26745-outlook-com-and-events/
 ; http://www.autoitscript.com/forum/topic/26745-outlook-com-and-events/
 ; http://www.dimastr.com/outspy/home.htm
-
-#AutoIt3Wrapper_Icon=OutlookReminderFocus.ico
-#AutoIt3Wrapper_Outfile=OutlookReminderFocus.exe
-#AutoIt3Wrapper_Res_Description=Moves Outlooks reminder windows on top, when a reminder is triggered.
 
 ; http://www.autoitscript.com/autoit3/docs/functions/AutoItSetOption.htm#WinTitleMatchMode
 Opt("WinTitleMatchMode", 2)
@@ -36,6 +37,7 @@ Endif
 ; Prevent this application from starting Outlook
 While 1
 	If ProcessExists("outlook.exe") And ObjName($outlook) <> "Application"  Then
+		Sleep(5000) ; Give Outlook some time to load to prevent "Operation unavailable" error
 		; Outlook has been started, exit loop and watch for ReminderFire events
 		$outlook = ObjGet("", "Outlook.Application")
 
@@ -108,20 +110,27 @@ Func OutlookEventReminders_ReminderFire($obj)
 EndFunc
 
 Func MyErrFunc($oMyError)
-    ConsoleWrite("COM error" & @CR)
-    $HexNumber = hex($oMyError.number,8)
-    ConsoleWrite("COM Error: err.description is: " & @TAB & $oMyError.description & " err.number is: " & @TAB & $HexNumber & " err.scriptline is: " & @TAB & $oMyError.scriptline & @CR)
-	Msgbox(0,  "AutoItCOM", "We intercepted a COM Error !"    				& @CRLF & @CRLF & _
-				"err.description is: " 	& @TAB 	& $oMyError.description  		& @CRLF & _
-				"err.windescription:"   & @TAB 	& $oMyError.windescription 	& @CRLF & _
-				"err.number is: "       & @TAB 	& hex($oMyError.number,8)  	& @CRLF & _
-				"err.lastdllerror is: " & @TAB 	& $oMyError.lastdllerror   & @CRLF & _
-				"err.scriptline is: "   & @TAB 	& $oMyError.scriptline   	& @CRLF & _
-				"err.source is: "       & @TAB 	& $oMyError.source       	& @CRLF & _
-				"err.helpfile is: "     & @TAB 	& $oMyError.helpfile    	& @CRLF & _
-				"err.helpcontext is: "  & @TAB 	& $oMyError.helpcontext _
-			)
-    SetError(1)
+	If hex($oMyError.number, 8) = "800401e3" Then
+		; Catch "Operation unavailable" error...Try again to get Outlook object
+		; http://support.microsoft.com/kb/238610
+		ConsoleWrite("COM error: Operation unavailable occurred..Trying again to get Outlook object" & @CR)
+		SetError(0)
+	Else
+		ConsoleWrite("COM error" & @CR)
+		$HexNumber = hex($oMyError.number, 8)
+		ConsoleWrite("COM Error: err.description is: " & @TAB & $oMyError.description & " err.number is: " & @TAB & $HexNumber & " err.scriptline is: " & @TAB & $oMyError.scriptline & @CR)
+		Msgbox(0,  "AutoItCOM", "We intercepted a COM Error !"    				& @CRLF & @CRLF & _
+					"err.description is: " 	& @TAB 	& $oMyError.description  		& @CRLF & _
+					"err.windescription:"   & @TAB 	& $oMyError.windescription 	& @CRLF & _
+					"err.number is: "       & @TAB 	& hex($oMyError.number,8)  	& @CRLF & _
+					"err.lastdllerror is: " & @TAB 	& $oMyError.lastdllerror   & @CRLF & _
+					"err.scriptline is: "   & @TAB 	& $oMyError.scriptline   	& @CRLF & _
+					"err.source is: "       & @TAB 	& $oMyError.source       	& @CRLF & _
+					"err.helpfile is: "     & @TAB 	& $oMyError.helpfile    	& @CRLF & _
+					"err.helpcontext is: "  & @TAB 	& $oMyError.helpcontext _
+				)
+		SetError(1)
+	EndIf
 EndFunc
 
 ; eof
